@@ -5,7 +5,8 @@ require('dotenv').config();
 const app = express();
 app.use(cors());
 app.use(express.json());
-
+const feedbackRouter = require('./routes/feedback'); // путь к файлу из Шага 4
+app.use(feedbackRouter);
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/profile', require('./routes/profile'));
 
