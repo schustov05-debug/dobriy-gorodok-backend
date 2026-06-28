@@ -15,17 +15,14 @@ router.post('/api/feedback', async (req, res) => {
     // 1. Создаем транспорт для отправки писем через SMTP Яндекса
 const transporter = nodemailer.createTransport({
     host: 'smtp.yandex.ru',
-    port: 587,
-    secure: false, // Обязательно false для 587 порта
+    port: 465,
+    secure: true, // Обязательно false для 587 порта
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASSWORD,
     },
     // Вот здесь решение вашей ошибки:
-    family: 4, 
-    // Дополнительные параметры для надежности:
-    connectionTimeout: 10000,
-    socketTimeout: 20000
+    family: 4
 });
 
     // 2. Настраиваем само письмо
