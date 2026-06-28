@@ -16,15 +16,16 @@ router.post('/api/feedback', async (req, res) => {
 const transporter = nodemailer.createTransport({
     host: 'smtp.yandex.ru',
     port: 587,
-    secure: false, // false для 587 порта, TLS запустится автоматически через STARTTLS
+    secure: false, // Обязательно false для 587 порта
     auth: {
-        user: process.env.SMTP_USER,       
-        pass: process.env.SMTP_PASSWORD,   
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
     },
-    // Добавляем таймауты, чтобы соединение не висело вечно в случае сетевых затыков
-    connectionTimeout: 10000, // 10 секунд на подключение
-    greetingTimeout: 10000,
-    socketTimeout: 15000
+    // Вот здесь решение вашей ошибки:
+    family: 4, 
+    // Дополнительные параметры для надежности:
+    connectionTimeout: 10000,
+    socketTimeout: 20000
 });
 
     // 2. Настраиваем само письмо
