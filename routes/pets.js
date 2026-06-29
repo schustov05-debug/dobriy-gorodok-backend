@@ -39,7 +39,10 @@ router.get('/:id', async (req, res) => {
 
 // 3. ДОБАВИТЬ ПИТОМЦА (Только для Администратора)
 router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
-  const { name, type, age, gender, description, image_url } = req.body;
+  const { name, type, age, gender, description } = req.body;
+  
+  // Безопасный перехват ссылки: подхватит и image_url, и photo_url с фронта
+  const finalImageUrl = req.body.image_url || req.body.photo_url || null;
 
   if (!name || !type || !age || !gender) {
     return res.status(400).json({ error: 'Пожалуйста, заполните обязательные поля (имя, тип, возраст, пол)' });
@@ -51,7 +54,7 @@ router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id, name, type, age, gender, description, image_url AS photo_url, created_at
     `;
-    const values = [name, type, parseInt(age, 10), gender, description || null, image_url || null];
+    const values = [name, type, parseInt(age, 10), gender, description || null, finalImageUrl];
     
     const result = await pool.query(queryText, values);
     res.status(201).json(result.rows[0]);
