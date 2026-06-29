@@ -9,7 +9,7 @@ const adminMiddleware = require('../middleware/admin');
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, name, type, age, gender, description, image_url AS photo_url, created_at FROM pets ORDER BY created_at DESC'
+      'SELECT id, name, type, age, gender, description, image_url AS photo_url, images, created_at FROM pets ORDER BY created_at DESC'
     );
     res.json(result.rows);
   } catch (err) {
@@ -23,7 +23,7 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'SELECT id, name, type, age, gender, description, image_url AS photo_url, created_at FROM pets WHERE id = $1',
+      'SELECT id, name, type, age, gender, description, image_url AS photo_url, images, created_at FROM pets WHERE id = $1',
       [id]
     );
 
@@ -39,10 +39,11 @@ router.get('/:id', async (req, res) => {
 
 // 3. ДОБАВИТЬ ПИТОМЦА (Только для Администратора)
 router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
-  const { name, type, age, gender, description } = req.body;
+  const { name, type, age, gender, description, images } = req.body;
   
-  // Безопасный перехват ссылки: подхватит и image_url, и photo_url с фронта
-  const finalImageUrl = req.body.image_url || req.body.photo_url || null;
+  // Безопасный перехват ссылки для обратной совместимости: 
+  // если images — массив, берем первую картинку как главную для image_url
+  const finalImageUrl = req.body.image_url || req.body.photo_url || (Array.isArray(images) && images.length > 0 ? images[0] : null);
 
   if (!name || !type || !age || !gender) {
     return res.status(400).json({ error: 'Пожалуйста, заполните обязательные поля (имя, тип, возраст, пол)' });
@@ -50,11 +51,11 @@ router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
 
   try {
     const queryText = `
-      INSERT INTO pets (name, type, age, gender, description, image_url)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING id, name, type, age, gender, description, image_url AS photo_url, created_at
+      INSERT INTO pets (name, type, age, gender, description, image_url, images)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id, name, type, age, gender, description, image_url AS photo_url, images, created_at
     `;
-    const values = [name, type, parseInt(age, 10), gender, description || null, finalImageUrl];
+    const values = [name, type, parseInt(age, 10), gender, description || null, finalImageUrl, images || []];
     
     const result = await pool.query(queryText, values);
     res.status(201).json(result.rows[0]);
@@ -64,13 +65,13 @@ router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
   }
 });
 
-// 👇 ДОБАВЛЕННЫЙ РОУТ: 4. ОБНОВИТЬ ДАННЫЕ ПИТОМЦА (Только для Администратора)
+// 4. ОБНОВИТЬ ДАННЫЕ ПИТОМЦА (Только для Администратора)
 router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   const { id } = req.params;
-  const { name, type, age, gender, description } = req.body;
+  const { name, type, age, gender, description, images } = req.body;
   
-  // Такой же безопасный перехват ссылки для обновления фотографии
-  const finalImageUrl = req.body.image_url || req.body.photo_url || null;
+  // Синхронизируем главную картинку: берем первую из обновленного массива images
+  const finalImageUrl = req.body.image_url || req.body.photo_url || (Array.isArray(images) && images.length > 0 ? images[0] : null);
 
   if (!name || !type || !age || !gender) {
     return res.status(400).json({ error: 'Пожалуйста, заполните обязательные поля (имя, тип, возраст, пол)' });
@@ -79,11 +80,11 @@ router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const queryText = `
       UPDATE pets 
-      SET name = $1, type = $2, age = $3, gender = $4, description = $5, image_url = $6
-      WHERE id = $7
-      RETURNING id, name, type, age, gender, description, image_url AS photo_url, created_at
+      SET name = $1, type = $2, age = $3, gender = $4, description = $5, image_url = $6, images = $7
+      WHERE id = $8
+      RETURNING id, name, type, age, gender, description, image_url AS photo_url, images, created_at
     `;
-    const values = [name, type, parseInt(age, 10), gender, description || null, finalImageUrl, id];
+    const values = [name, type, parseInt(age, 10), gender, description || null, finalImageUrl, images || [], id];
 
     const result = await pool.query(queryText, values);
 
