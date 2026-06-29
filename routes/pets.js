@@ -64,7 +64,41 @@ router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
   }
 });
 
-// 4. УДАЛИТЬ ПИТОМЦА (Только для Администратора)
+// 👇 ДОБАВЛЕННЫЙ РОУТ: 4. ОБНОВИТЬ ДАННЫЕ ПИТОМЦА (Только для Администратора)
+router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { name, type, age, gender, description } = req.body;
+  
+  // Такой же безопасный перехват ссылки для обновления фотографии
+  const finalImageUrl = req.body.image_url || req.body.photo_url || null;
+
+  if (!name || !type || !age || !gender) {
+    return res.status(400).json({ error: 'Пожалуйста, заполните обязательные поля (имя, тип, возраст, пол)' });
+  }
+
+  try {
+    const queryText = `
+      UPDATE pets 
+      SET name = $1, type = $2, age = $3, gender = $4, description = $5, image_url = $6
+      WHERE id = $7
+      RETURNING id, name, type, age, gender, description, image_url AS photo_url, created_at
+    `;
+    const values = [name, type, parseInt(age, 10), gender, description || null, finalImageUrl, id];
+
+    const result = await pool.query(queryText, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Питомец не найден или уже был удален' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Ошибка PUT /api/pets/:id:', err.message);
+    res.status(500).json({ error: 'Не удалось обновить данные питомца в базе данных' });
+  }
+});
+
+// 5. УДАЛИТЬ ПИТОМЦА (Только для Администратора)
 router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
