@@ -1,3 +1,4 @@
+// index.js (в корне проекта)
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -5,12 +6,19 @@ require('dotenv').config();
 const app = express();
 app.use(cors());
 app.use(express.json());
-const feedbackRouter = require('./routes/feedback'); // путь к файлу из Шага 4
+
+// Существующие роуты
+const feedbackRouter = require('./routes/feedback'); 
 app.use(feedbackRouter);
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/profile', require('./routes/profile'));
 
+// 👇 НОВЫЕ РОУТЫ: ПОДКЛЮЧАЕМ СИСТЕМУ ПИТОМЦЕВ И ЗАЯВОК
+app.use('/api/pets', require('./routes/pets'));
+app.use('/api/favorites', require('./routes/favorites'));
+app.use('/api/applications', require('./routes/applications'));
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Сервер запущен на порту ${PORT}`);
+  console.log(`Сервер приюта «Добрый городок» запущен на порту ${PORT}`);
 });
