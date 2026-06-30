@@ -7,12 +7,21 @@ const axios = require('axios');
 
 router.post('/', authMiddleware, async (req, res) => {
   const { pet_id } = req.body; // Больше не ждем никакой type с фронтенда
-
+  const user_id = req.user.id;
+  const existing = await db.applications.findOne({ pet_id, user_id });
+  
   if (!pet_id) {
     return res.status(400).json({ error: 'Не указан ID питомца' });
   }
-
   try {
+    const checkResult = await pool.query(
+      'SELECT id FROM applications WHERE user_id = $1 AND pet_id = $2',
+      [user_id, pet_id]
+    );
+
+    if (checkResult.rows.length > 0) {
+      return res.status(400).json({ error: "Вы уже подавали заявку на этого питомца!" });
+    }
     // 1. Записываем заявку в БД приюта Supabase
     const appResult = await pool.query(
       'INSERT INTO applications (user_id, pet_id) VALUES ($1, $2) RETURNING *',
