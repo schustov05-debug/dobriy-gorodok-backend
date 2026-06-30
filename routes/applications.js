@@ -5,6 +5,21 @@ const pool = require('../db/index');
 const authMiddleware = require('../middleware/auth');
 const axios = require('axios');
 
+router.get('/check/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const user_id = req.user.id;
+
+  try {
+    const checkResult = await pool.query(
+      'SELECT 1 FROM applications WHERE user_id = $1 AND pet_id = $2 LIMIT 1',
+      [user_id, id]
+    );
+    res.json({ applied: checkResult.rows.length > 0 });
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка проверки' });
+  }
+});
+
 router.post('/', authMiddleware, async (req, res) => {
   const { pet_id } = req.body; // Больше не ждем никакой type с фронтенда
   const user_id = req.user.id;
