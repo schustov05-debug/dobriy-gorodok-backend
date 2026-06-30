@@ -56,9 +56,47 @@ async function deletePhotosFromSupabase(imagesArray) {
 // 1. ПОЛУЧИТЬ ВСЕХ ПИТОМЦЕВ (Доступно всем)
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT id, name, type, age, gender, description, image_url AS photo_url, images, created_at FROM pets ORDER BY created_at DESC'
-    );
+    let userId = null;
+
+    // Пытаемся достать токен из заголовков (чтобы понять, кто запрашивает список)
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      // Проверяем токен через Supabase и достаем ID пользователя
+      const { data, error } = await supabase.auth.getUser(token);
+      if (!error && data?.user) {
+        userId = data.user.id;
+      }
+    }
+
+    let queryText = '';
+    let values = [];
+
+    if (userId) {
+      // Пользователь авторизован: джоиним таблицу favorites
+      queryText = `
+        SELECT 
+          p.id, p.name, p.type, p.age, p.gender, p.description, 
+          p.image_url AS photo_url, p.images, p.created_at,
+          (CASE WHEN f.pet_id IS NOT NULL THEN true ELSE false END) AS is_favorite
+        FROM pets p
+        LEFT JOIN favorites f ON p.id = f.pet_id AND f.user_id = $1
+        ORDER BY p.created_at DESC
+      `;
+      values = [userId];
+    } else {
+      // Гость: отдаем всех питомцев, никто не в избранном
+      queryText = `
+        SELECT 
+          id, name, type, age, gender, description, 
+          image_url AS photo_url, images, created_at,
+          false AS is_favorite
+        FROM pets 
+        ORDER BY created_at DESC
+      `;
+    }
+
+    const result = await pool.query(queryText, values);
     res.json(result.rows);
   } catch (err) {
     console.error('Ошибка GET /api/pets:', err.message);
