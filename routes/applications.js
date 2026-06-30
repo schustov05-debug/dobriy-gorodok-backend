@@ -8,7 +8,6 @@ const axios = require('axios');
 router.post('/', authMiddleware, async (req, res) => {
   const { pet_id } = req.body; // Больше не ждем никакой type с фронтенда
   const user_id = req.user.id;
-  const existing = await db.applications.findOne({ pet_id, user_id });
   
   if (!pet_id) {
     return res.status(400).json({ error: 'Не указан ID питомца' });
