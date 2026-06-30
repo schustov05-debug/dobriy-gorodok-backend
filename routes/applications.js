@@ -14,18 +14,17 @@ router.post('/', authMiddleware, async (req, res) => {
     return res.status(400).json({ error: 'Не указан ID питомца' });
   }
   try {
-    const checkResult = await pool.query(
-      'SELECT id FROM applications WHERE user_id = $1 AND pet_id = $2',
+    const existing = await pool.query(
+      'SELECT 1 FROM applications WHERE user_id = $1 AND pet_id = $2 LIMIT 1',
       [user_id, pet_id]
     );
-
-    if (checkResult.rows.length > 0) {
+    if (existing.rows.length > 0) {
       return res.status(400).json({ error: "Вы уже подавали заявку на этого питомца!" });
     }
     // 1. Записываем заявку в БД приюта Supabase
     const appResult = await pool.query(
       'INSERT INTO applications (user_id, pet_id) VALUES ($1, $2) RETURNING *',
-      [req.user.id, pet_id]
+      [user_id, pet_id]
     );
 
     // 2. Достаем информацию о пользователе и питомце для Telegram-уведомления волонтерам
