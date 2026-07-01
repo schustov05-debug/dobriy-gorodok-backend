@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
 router.post('/sync', async (req, res) => {
     try {
         // Пример открытой RSS-ленты (можно заменить на любую другую ветеринарную ленту)
-        const feedUrl = 'https://vetandlife.ru/feed/';
+        const feedUrl = 'https://www.zooinform.ru/feed/';
         // Примечание: Для теста можно взять RSS любого крупного хаба или медиа, например: https://habr.com/ru/rss/articles/
         
         const feed = await parser.parseURL(feedUrl);
