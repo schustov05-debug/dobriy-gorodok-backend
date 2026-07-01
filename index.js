@@ -17,6 +17,8 @@ app.use('/api/profile', require('./routes/profile'));
 app.use('/api/pets', require('./routes/pets'));
 app.use('/api/favorites', require('./routes/favorites'));
 app.use('/api/applications', require('./routes/applications'));
+const articlesRouter = require('./routes/articles');
+app.use('/api/articles', articlesRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
