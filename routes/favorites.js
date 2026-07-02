@@ -1,17 +1,14 @@
-// routes/favorites.js
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/index');
 const authMiddleware = require('../middleware/auth');
 
-// 1. Получить список всех избранных ID питомцев для текущего юзера
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT pet_id FROM favorites WHERE user_id = $1',
       [req.user.id]
     );
-    // Возвращаем просто массив id, чтобы фронтенду было легче проверять наличие лайка
     const favoriteIds = result.rows.map(row => row.pet_id);
     res.json(favoriteIds);
   } catch (err) {
@@ -19,12 +16,9 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// 2. Добавить питомца в избранное (POST /api/favorites/:pet_id)
 router.post('/:pet_id', authMiddleware, async (req, res) => {
   try {
     const { pet_id } = req.params;
-    
-    // Проверяем, нет ли уже лайка, чтобы избежать дубликатов
     const checkExist = await pool.query(
       'SELECT id FROM favorites WHERE user_id = $1 AND pet_id = $2',
       [req.user.id, pet_id]
@@ -44,7 +38,6 @@ router.post('/:pet_id', authMiddleware, async (req, res) => {
   }
 });
 
-// 3. Удалить питомца из избранного (DELETE /api/favorites/:pet_id)
 router.delete('/:pet_id', authMiddleware, async (req, res) => {
   try {
     const { pet_id } = req.params;
